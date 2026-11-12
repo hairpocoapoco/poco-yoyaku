@@ -115,9 +115,9 @@ pre#shText{white-space:pre-wrap;font:inherit;font-size:14px;background:var(--sof
 </div></div>
 
 <script>
-const SNAP = new Date("2026-11-12T14:05:00+09:00");
+let SNAP = new Date("2026-11-12T14:05:00+09:00");
 // [月/日, KAZU, 湯本]   ""=空きなし  null=出勤なし  複数枠は「・」区切り  *=カットのみ
-const DATA = [
+let DATA = [
 ["11/11","16:30*",""],["11/13","15:00~","15:30*"],["11/18","16:30*",""],["11/19","11:30~14:00",""],
 ["11/21","17:00*","15:15*"],["11/29","11:30~14:00",null],["12/1","11:30~","12:30~"],["12/2","13:00~","10:00~15:00"],
 ["12/4","17:00*","14:15~17:00"],["12/5","13:30*","15:30*"],["12/9","","12:30*"],["12/10","","12:30*"],
@@ -241,8 +241,14 @@ function render(){
   document.getElementById("list").innerHTML = html || '<div class="empty">ご希望の条件で空いているお時間はありません</div>';
   document.getElementById("count").textContent = n ? `${n}日に空きがあります` : "";
 }
-(function(){const s=new Date(SNAP.getTime()+(SNAP.getTimezoneOffset()+540)*60000);
-document.getElementById("snap").textContent = `${s.getMonth()+1}/${s.getDate()} ${s.getHours()}:${String(s.getMinutes()).padStart(2,"0")}`;})();
+function showSnap(){const s=new Date(SNAP.getTime()+(SNAP.getTimezoneOffset()+540)*60000);
+document.getElementById("snap").textContent = `${s.getMonth()+1}/${s.getDate()} ${s.getHours()}:${String(s.getMinutes()).padStart(2,"0")}`;}
+showSnap();
+// 最新の空き状況を読み込む（失敗したら上の内容のまま表示）
+fetch("https://raw.githubusercontent.com/hairpocoapoco/poco-yoyaku/main/data.json?t="+Date.now(),{cache:"no-store"})
+  .then(r=>r.ok?r.json():Promise.reject())
+  .then(j=>{ if(Array.isArray(j.data)&&j.data.length){ DATA=j.data; SNAP=new Date(j.updated); showSnap(); render(); } })
+  .catch(()=>{});
 document.getElementById("fStylist").onclick=e=>{if(e.target.dataset.v){st.stylist=e.target.dataset.v;render()}};
 document.getElementById("fMenu").onclick=e=>{if(e.target.dataset.v){st.menu=e.target.dataset.v;render()}};
 render();

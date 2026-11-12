@@ -1,0 +1,36 @@
+name: 空き状況の同期
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # 20分ごと（GitHubの混雑で数分遅れることがあります）
+  workflow_dispatch:          # Actions タブから手動でも実行できます
+  push:
+    paths:
+      - ".github/scripts/sync.py"
+      - ".github/workflows/sync.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 公式ページを読み取って data.json を更新
+        run: python .github/scripts/sync.py
+      - name: 変更を保存
+        run: |
+          git config user.name "poco-yoyaku-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git commit -m "空き状況を更新" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
