@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>poco a poco ご予約の空き状況</title>
+<meta name="description" content="poco a poco（伊勢原）の予約の空き状況。1時間ごとに更新しています。">
+<meta property="og:title" content="poco a poco ご予約の空き状況">
+<meta property="og:description" content="空いている日時をタップして、そのままご予約フォームへ。">
+<style>
+:root{--bg:#faf8f5;--card:#fff;--ink:#2b2622;--mute:#8a817a;--line:#ece6df;--acc:#b5654a;--acc2:#4f7a6b;--soft:#f3ebe5}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1a18;--card:#262321;--ink:#eee8e2;--mute:#9d948c;--line:#38332f;--acc:#e08b6c;--acc2:#7fb3a1;--soft:#2f2a27}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px 80px}
+h1{font-size:20px;margin:6px 0 2px;letter-spacing:.02em}
+.sub{color:var(--mute);font-size:12px;margin-bottom:14px}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:3px;margin-bottom:8px;gap:2px}
+.seg button{flex:1;border:0;background:transparent;color:var(--ink);padding:8px 4px;border-radius:9px;font:inherit;font-size:13px;cursor:pointer}
+.seg button.on{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
+.lbl{font-size:11px;color:var(--mute);margin:10px 2px 4px}
+.month{font-size:13px;font-weight:700;color:var(--mute);margin:20px 2px 6px;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:1}
+.day{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px;display:flex;gap:12px;cursor:pointer}
+.day:active{transform:scale(.99)}
+.date{min-width:52px;text-align:center}
+.date .d{font-size:20px;font-weight:700;line-height:1.1}
+.date .w{font-size:12px;color:var(--mute)}
+.date .w.sat{color:#4a78c2}.date .w.sun{color:#c24a4a}
+.today{font-size:10px;background:var(--acc);color:#fff;border-radius:6px;padding:1px 5px;display:inline-block;margin-top:2px}
+.rows{flex:1;display:flex;flex-direction:column;gap:6px;justify-content:center}
+.row{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.who{font-size:11px;font-weight:700;width:38px;padding-top:3px}
+.who.k{color:var(--acc)}.who.y{color:var(--acc2)}
+.chips{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.chip{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--soft);white-space:nowrap;cursor:pointer}
+.chip.cut{background:transparent;border:1px dashed var(--line);color:var(--mute)}
+.chip.cut b{font-weight:500;font-size:10px;margin-left:3px}
+.empty{color:var(--mute);text-align:center;padding:40px 0;font-size:14px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+.bar .in{max-width:560px;margin:0 auto;display:flex;gap:8px}
+.bar a{flex:1;text-align:center;text-decoration:none;padding:10px 6px;border-radius:10px;font-size:13px;font-weight:600}
+.bar a.p{background:var(--acc);color:#fff}
+.bar a.s{background:var(--soft);color:var(--ink)}
+.note{font-size:12px;color:var(--mute);background:var(--soft);border-radius:10px;padding:10px 12px;margin-top:18px}
+.note p{margin:4px 0}
+.note a{color:var(--acc)}
+.count{font-size:12px;color:var(--mute);margin:12px 2px 0}
+.tapnote{font-size:11px;color:var(--mute);margin:4px 2px 0}
+.sbg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.sbg[hidden]{display:none}
+.sheet{background:var(--card);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto}
+.sh-h{display:flex;justify-content:space-between;align-items:center}
+.sh-h div{font-size:18px;font-weight:700}
+.sh-h button{border:0;background:var(--soft);color:var(--ink);width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:7px 10px;font:inherit;font-size:13px;cursor:pointer}
+.opt.on{border-color:var(--acc);background:var(--acc);color:#fff}
+.opt small{display:block;font-size:10px;opacity:.8}
+pre#shText{white-space:pre-wrap;font:inherit;font-size:14px;background:var(--soft);border-radius:10px;padding:10px 12px;margin:0;user-select:all;-webkit-user-select:all}
+.warn{font-size:13px;color:var(--acc);font-weight:600;margin-top:10px}
+.sh-btns{display:flex;gap:8px;margin-top:14px}
+.sh-btns>*{flex:1;text-align:center;text-decoration:none;padding:12px 6px;border-radius:10px;font:inherit;font-size:14px;font-weight:600;border:0;cursor:pointer}
+.sh-btns .p{background:var(--acc);color:#fff}
+.sh-btns .s{background:var(--soft);color:var(--ink)}
+.hint{font-size:12px;color:var(--mute);margin-top:8px;min-height:1em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>poco a poco ご予約の空き状況</h1>
+  <div class="sub"><span id="snap"></span> 更新 · 1時間ごとに自動で更新しています</div>
+
+  <div class="lbl">スタイリスト</div>
+  <div class="seg" id="fStylist">
+    <button data-v="all" class="on">全員</button>
+    <button data-v="k">KAZU</button>
+    <button data-v="y">湯本</button>
+  </div>
+
+  <div class="lbl">メニュー</div>
+  <div class="seg" id="fMenu">
+    <button data-v="cut" class="on">カット</button>
+    <button data-v="color">パーマ / カラー</button>
+    <button data-v="long">縮毛・パーマ+カラー</button>
+  </div>
+
+  <div class="count" id="count"></div>
+  <div class="tapnote">ご希望の日付や時間をタップすると、ご予約フォームへ進めます</div>
+  <div id="list"></div>
+
+  <div class="note">
+    <p>営業時間 9:00–18:00 ／ 月曜定休ほか ／ 年末年始 12/30–1/4 はお休み</p>
+    <p>最終受付：カット 17:00 ・ パーマ／カラー 16:00 ・ 縮毛矯正、パーマ+カラー 15:00</p>
+    <p>点線の枠は「カットのみ」可能なお時間です。選んだメニューでお受けできない時間は表示していません。</p>
+    <p>当日のご予約はお電話でお願いします。更新のタイミングによっては、表示中のお時間が埋まっている場合があります。</p>
+    <p>初めての方は、ホットペッパービューティーからご予約ください（ご紹介の方を除く）。</p>
+    <p>お電話：0463-91-3777<br><a href="https://hair-pocoapoco.com/">poco a poco ホームページ</a></p>
+  </div>
+</div>
+
+<div class="sbg" id="sbg" hidden><div class="sheet" role="dialog" aria-modal="true">
+  <div class="sh-h"><div id="shTitle"></div><button id="shX" aria-label="閉じる">×</button></div>
+  <div class="lbl">お時間を選ぶ</div>
+  <div class="opts" id="shOpts"></div>
+  <div class="lbl">ご予約フォームに入力する内容</div>
+  <pre id="shText"></pre>
+  <div class="warn" id="shToday" hidden>当日のご予約はお電話でお願いします</div>
+  <div class="sh-btns"><button class="s" id="shCopy">コピー</button><a class="p" id="shGo" href="https://hair-pocoapoco.com/reserve">コピーしてフォームへ</a></div>
+  <div class="hint" id="shHint"></div>
+</div></div>
+
+<div class="bar"><div class="in">
+  <a class="s" href="tel:0463913777">電話する</a>
+  <a class="p" href="https://hair-pocoapoco.com/reserve">ご予約フォーム</a>
+</div></div>
+
+<script>
+const SNAP = new Date("2026-11-12T00:11:00+09:00");
+// [月/日, KAZU, 湯本]   ""=空きなし  null=出勤なし  複数枠は「・」区切り  *=カットのみ
+const DATA = [
+["11/11","16:30*",""],["11/13","15:00~","15:30*"],["11/18","16:30*",""],["11/19","11:30~14:00",""],
+["11/21","17:00*","15:15*"],["11/29","11:30~14:00",null],["12/1","11:30~","12:30~"],["12/2","13:00~","10:00~15:00"],
+["12/4","17:00*","14:15~17:00"],["12/5","13:30*","15:30*"],["12/9","","12:30*"],["12/10","","12:30*"],
+["12/12","","13:00*"],["12/15","14:00*",""],["12/19","17:00*",""],["12/20","17:00*",null],["12/23","","13:00*"],
+["1/5","11:30~","12:30~"],["1/6","14:30~","12:30~"],["1/7","9:00*・13:00~","14:30~17:00"],["1/9","13:00~",""],
+["1/10","16:30*",null],["1/13","12:45*・16:30*","12:30~"],["1/14","9:00*・13:00~",""],["1/15","14:30~","14:15~17:00"],
+["1/16","11:30*","12:00~14:30"],["1/17","14:15*",null],["1/19","15:30~","15:00*"],["1/20","14:00~","10:00~12:30・14:15~17:00"],
+["1/21","9:00*・12:45~","11:30~"],["1/23","16:45*",""],["1/26","16:00~",""],["1/28","15:30","10:00~"],["1/29","16:00~",""],
+["1/30","10:15~13:00","14:00~16:30"],["2/2","9:00*・13:15~","13:45~"],["2/4","14:30~","10:00~"],["2/5","9:00*・15:30~","14:15~17:00"],
+["2/6","16:00~",""],["2/7","16:45*",null],["2/9","11:30~","12:30~"],["2/10","16:15*","12:00~"],["2/12","9:00*","12:30~15:00"],
+["2/13","","10:00~14:30"],["2/14","16:00~",null],["2/17","13:00~","15:15*"],["2/18","13:00*・16:00~","12:00~"],
+["2/19","12:00~","13:00~"],["2/20","","12:30*"],["2/21","15:00~",null],["2/23","10:30~","10:00~"],["2/25","9:00~",""],
+["2/26","11:45~","10:00~12:30"],["2/27","13:00*",""],["2/28","11:30~",null],["3/2","9:00*・14:30~","10:00~"],
+["3/3","9:00*・12:30~","12:30~"],["3/5","11:30~","15:00~"],["3/6","16:00~",""],["3/9","9:00~","11:30~"],["3/10","13:00~",null],
+["3/12","9:00*・15:30~","10:00~"],["3/13","9:00*・15:30~","12:30~"],["3/14","13:00~",null],["3/16","9:00*・13:00~","10:00~"]
+];
+const LAST = {cut:17*60, color:16*60, long:15*60};
+const WD = ["日","月","火","水","木","金","土"];
+const st = {stylist:"all", menu:"cut"};
+try{const s=JSON.parse(localStorage.getItem("poco-f")||"{}");Object.assign(st,s)}catch(e){}
+
+// 日本時間で「今」を扱う（端末のタイムゾーンに関係なく）
+function jstNow(){const n=new Date();return new Date(n.getTime()+(n.getTimezoneOffset()+540)*60000)}
+const toMin = t => {const [h,m]=t.split(":").map(Number);return h*60+m};
+function parseSlots(str){
+  if(!str) return [];
+  return str.split("・").map(raw=>{
+    const cut = raw.endsWith("*"); const s = raw.replace("*","");
+    const [a,b] = s.split("~");
+    return {cut, start:toMin(a), end:b?toMin(b):null, open:s.endsWith("~"), label:s.replace("~","〜")};
+  });
+}
+function fitSlot(sl, menu, dayIsToday, nowMin){
+  if(menu!=="cut" && sl.cut) return null;
+  const last = LAST[menu];
+  let start = sl.start;
+  if(dayIsToday && nowMin > start){
+    if(sl.end==null && !sl.open) return null;
+    start = nowMin;
+  }
+  if(start > last) return null;
+  return sl;
+}
+function dateOf(md){
+  const [m,d]=md.split("/").map(Number);
+  const s=jstNow(); let y=s.getFullYear();
+  if(m < s.getMonth()+1-6) y++; else if(m > s.getMonth()+1+6) y--;
+  return new Date(y, m-1, d);
+}
+
+let DAYS = {};
+const MENU_TXT = {cut:"カット", color:"パーマ または カラー", long:"縮毛矯正 または パーマ+カラー"};
+const fmt = m => `${Math.floor(m/60)}時${String(m%60).padStart(2,"0")}分`;
+const HINT = "フォームが開いたら、日時をお選びいただき、メニューとご要望を貼り付けてください。";
+let cur = null, sel = 0;
+function openSheet(md, idx){
+  const d = DAYS[md]; if(!d) return;
+  cur = d; sel = idx||0;
+  document.getElementById("shTitle").textContent = `${md}（${WD[d.dt.getDay()]}）`;
+  document.getElementById("shOpts").innerHTML = d.slots.map((s,i)=>`<button class="opt" data-i="${i}">${s.name} ${s.label}${s.cut?"<small>カットのみ</small>":""}</button>`).join("");
+  const go = document.getElementById("shGo"), cp = document.getElementById("shCopy");
+  document.getElementById("shToday").hidden = !d.isToday;
+  if(d.isToday){ go.href = "tel:0463913777"; go.textContent = "電話する"; cp.hidden = true; document.getElementById("shHint").textContent = "お電話：0463-91-3777"; }
+  else { go.href = "https://hair-pocoapoco.com/reserve"; go.textContent = "コピーしてフォームへ"; cp.hidden = false; document.getElementById("shHint").textContent = HINT; }
+  updSheet();
+  document.getElementById("sbg").hidden = false;
+}
+function updSheet(){
+  document.querySelectorAll("#shOpts .opt").forEach(b=>b.classList.toggle("on", +b.dataset.i===sel));
+  const s = cur.slots[sel], dt = cur.dt;
+  const menu = s.cut ? "カット" : MENU_TXT[st.menu];
+  document.getElementById("shText").textContent =
+    `第１希望の日時：${dt.getMonth()+1}月${dt.getDate()}日 ${fmt(s.start)}\nご希望のメニュー：${menu}\nその他のご要望：担当 ${s.name} 希望`;
+}
+async function copyText(){
+  const el = document.getElementById("shText"), h = document.getElementById("shHint");
+  try{ await navigator.clipboard.writeText(el.textContent); h.textContent = "コピーしました。" + HINT; }
+  catch(e){ try{const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r);}catch(_){} h.textContent = "自動でコピーできませんでした。上の文字を長押ししてコピーしてください。"; }
+}
+document.getElementById("shOpts").onclick = e=>{const b=e.target.closest(".opt"); if(b){sel=+b.dataset.i; updSheet();}};
+document.getElementById("shCopy").onclick = ()=>copyText();
+document.getElementById("shGo").onclick = ()=>{ if(cur && !cur.isToday) copyText(); };
+document.getElementById("shX").onclick = ()=>{document.getElementById("sbg").hidden = true};
+document.getElementById("sbg").onclick = e=>{ if(e.target.id==="sbg") e.target.hidden = true; };
+document.getElementById("list").onclick = e=>{
+  const day = e.target.closest(".day"); if(!day) return;
+  const chip = e.target.closest(".chip");
+  openSheet(day.dataset.md, chip ? +chip.dataset.i : 0);
+};
+
+function render(){
+  DAYS = {};
+  document.querySelectorAll("#fStylist button").forEach(b=>b.classList.toggle("on",b.dataset.v===st.stylist));
+  document.querySelectorAll("#fMenu button").forEach(b=>b.classList.toggle("on",b.dataset.v===st.menu));
+  try{localStorage.setItem("poco-f",JSON.stringify(st))}catch(e){}
+  const now = jstNow();
+  const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const nowMin = now.getHours()*60+now.getMinutes();
+  let html="", lastMonth=-1, n=0;
+  for(const [md,k,y] of DATA){
+    const dt = dateOf(md);
+    if(dt < today) continue;
+    const isToday = +dt===+today;
+    const rows=[]; const flat=[];
+    for(const [key,name,val] of [["k","KAZU",k],["y","湯本",y]]){
+      if(st.stylist!=="all" && st.stylist!==key) continue;
+      const slots = parseSlots(val).map(s=>fitSlot(s,st.menu,isToday,nowMin)).filter(Boolean);
+      if(!slots.length) continue;
+      const base = flat.length;
+      slots.forEach(s=>flat.push({...s, name}));
+      rows.push(`<div class="row"><div class="who ${key}">${name}</div><div class="chips">${
+        slots.map((s,j)=>`<span class="chip${s.cut?" cut":""}" data-i="${base+j}">${s.label}${s.cut?"<b>カットのみ</b>":""}</span>`).join("")}</div></div>`);
+    }
+    if(!rows.length) continue;
+    n++;
+    DAYS[md] = {dt, isToday, slots: flat};
+    if(dt.getMonth()!==lastMonth){lastMonth=dt.getMonth();html+=`<div class="month">${dt.getFullYear()}年 ${dt.getMonth()+1}月</div>`}
+    const w=dt.getDay();
+    html+=`<div class="day" data-md="${md}"><div class="date"><div class="d">${md}</div><div class="w ${w===6?"sat":w===0?"sun":""}">${WD[w]}</div>${isToday?'<div class="today">今日</div>':""}</div><div class="rows">${rows.join("")}</div></div>`;
+  }
+  document.getElementById("list").innerHTML = html || '<div class="empty">ご希望の条件で空いているお時間はありません</div>';
+  document.getElementById("count").textContent = n ? `${n}日に空きがあります` : "";
+}
+(function(){const s=new Date(SNAP.getTime()+(SNAP.getTimezoneOffset()+540)*60000);
+document.getElementById("snap").textContent = `${s.getMonth()+1}/${s.getDate()} ${s.getHours()}:${String(s.getMinutes()).padStart(2,"0")}`;})();
+document.getElementById("fStylist").onclick=e=>{if(e.target.dataset.v){st.stylist=e.target.dataset.v;render()}};
+document.getElementById("fMenu").onclick=e=>{if(e.target.dataset.v){st.menu=e.target.dataset.v;render()}};
+render();
+</script>
+</body>
+</html>
